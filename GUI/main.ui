@@ -217,7 +217,7 @@
     <addaction name="actionNormal_Shading"/>
     <addaction name="actionBlinn_Phong"/>
     <addaction name="separator"/>
-    <addaction name="actionCell_Shading"/>
+    <addaction name="actionCel_Shading"/>
     <addaction name="actionAnother_Shading"/>
     <addaction name="separator"/>
     <addaction name="actionEnvironmental_Mapping"/>
@@ -249,7 +249,7 @@
   </action>
   <action name="actionTracing_Settings">
    <property name="text">
-    <string> Load SetUp</string>
+    <string>Load SetUp</string>
    </property>
   </action>
   <action name="actionStart_and_Save_Animation">
@@ -272,9 +272,9 @@
     <string>Blinn-Phong</string>
    </property>
   </action>
-  <action name="actionCell_Shading">
+  <action name="actionCel_Shading">
    <property name="text">
-    <string>Cell Shading</string>
+    <string>Cel Shading</string>
    </property>
   </action>
   <action name="actionAnother_Shading">

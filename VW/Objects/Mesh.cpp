@@ -12,7 +12,7 @@ Mesh::Mesh(const QString &fileName): Object()
 Mesh::~Mesh() {
     if (cares.size() > 0) cares.clear();
     if (vertexs.size() > 0) vertexs.clear();
-    if (triangles.size() > 0) triangles.clear();
+    if (plans.size() > 0) plans.clear();
 }
 
 void Mesh::makeBoundingVolumes() {
@@ -26,7 +26,7 @@ void Mesh::makeBoundingVolumes() {
 
     
     // Busquem les minimes coordenades per cada component
-    for(vec4 v : this->vertexs) {
+    for(vec3 v : this->vertexs) {
         if(v.x < minX) minX = v.x;
         if(v.y < minY) minY = v.y;
         if(v.z < minZ) minZ = v.z;
@@ -61,20 +61,43 @@ void Mesh::makeBoundingVolumes() {
 
 }
 
+// Indexacio dels plans a les cares de la malla
 void Mesh::makeTriangles() {
-    // TO DO Tutorial 1: A implementar (CREAT AMB PUNTERS, MILLORAR EN EL FUTUR, PARLAR ANNA)
-    triangles.clear();
-    for (Face f : cares) {
-        int i=f.idxVertices[0], j=f.idxVertices[1], k=f.idxVertices[2];
-        shared_ptr<Triangle> tri = make_shared<Triangle>(vec3(vertexs.at(i)),vec3(vertexs.at(j)),vec3(vertexs.at(k)));
-        triangles.push_back(tri);
-        tri->setMaterial(this->material);
+    if (plans.size() > 0) plans.clear();
+
+    // O(F²), F nº cares de la mesh. Trigara en carregar l'escena pero estalviem espai
+    for (shared_ptr<Face> f : cares) {
+        vec3 v1 = vertexs.at(f->idxVertices[0]);
+        vec3 normal = normalize(cross(vertexs.at(f->idxVertices[1])-v1, vertexs.at(f->idxVertices[2])-v1));
+        float D = -dot(normal, v1);
+
+        // Index del pla al vector plans
+        bool keep = true;
+        int i = 0;
+        while (i < plans.size() && keep) {
+            shared_ptr<Plane> p = plans.at(i);
+            if (p->isNormal(normal) && p->isD(D)) {
+                keep = false;
+            } else {
+                i++;
+            }
+        }
+        f->idxPlane = i;
+
+        if (keep) {
+            // Nou pla: l'afegim al vector
+            plans.push_back(make_shared<Plane>(normal,v1,D,material));  
+        }
     }
 }
 
 bool Mesh::hit(Ray &raig, float tmin, float tmax) const {
-    
-    // mirem primer si interseca amb la aabb
+    // Opcio de mostrar bounding volumes activada
+    if (Controller::getInstance()->getSetUp()->getBoundingVolumes()) {
+        return aabb->hit(raig,tmin,tmax);
+    }
+
+    // Mirem primer si interseca amb la aabb
     Ray aux2(raig.getOrigin(), raig.getDirection(), tmin, tmax);
     if(!aabb->hit(aux2, tmin, tmax)) {
         return false;
@@ -83,8 +106,8 @@ bool Mesh::hit(Ray &raig, float tmin, float tmax) const {
     // Intersecció amb els triangles de la malla
     Ray aux(raig.getOrigin(), raig.getDirection(), tmin, tmax);
     bool any = false;
-    for (shared_ptr<Triangle> tr : triangles) {
-        any |= tr->hit(aux, tmin, tmax);
+    for (shared_ptr<Face> f : cares) {
+        any |= f->hit(vertexs, plans, aux, tmin, tmax);
     }
 
     if(any) {
@@ -104,11 +127,29 @@ bool Mesh::hit(Ray &raig, float tmin, float tmax) const {
 }
 
 bool Mesh::allHits(Ray& raig, float tmin, float tmax) const {
-    // Intersecció amb els triangles de la malla
-    bool any = false;
-    for (shared_ptr<Triangle> tr : triangles) {
-        any |= tr->allHits(raig, tmin, tmax);
+
+    // Mirem primer si interseca amb la aabb
+    Ray aux(raig.getOrigin(), raig.getDirection(), tmin, tmax);
+    if (!aabb->allHits(aux, tmin, tmax)) {
+        return false;
     }
+
+    bool any;
+    if (Controller::getInstance()->getSetUp()->getBoundingVolumes()) {
+        // Opcio de mostrar bounding volumes activada
+        any = true;
+        for (shared_ptr<HitRecord> h : aux.getHitRecords()) {
+            raig.insertHit(h);
+        }
+    } else {
+        any = false;
+    }
+
+    // Intersecció amb els triangles de la malla
+    for (shared_ptr<Face> f : cares) {
+        any |= f->allHits(vertexs, plans, raig, tmin, tmax);
+    }
+
     return any;
 }
 
@@ -138,9 +179,9 @@ void Mesh::load (QString fileName) {
                     // if it’s a vertex position (v)
                     else if(lineParts.at(0).compare("v", Qt::CaseInsensitive) == 0)
                     {
-                        vertexs.push_back(vec4(lineParts.at(1).toFloat(),
+                        vertexs.push_back(vec3(lineParts.at(1).toFloat(),
                                                lineParts.at(2).toFloat(),
-                                               lineParts.at(3).toFloat(), 1.0f));
+                                               lineParts.at(3).toFloat()));
                     }
 
                     // if it’s a normal (vn)
@@ -158,21 +199,21 @@ void Mesh::load (QString fileName) {
                     // there’s an assumption here that faces are all triangles
                     else if(lineParts.at(0).compare("f", Qt::CaseInsensitive) == 0)
                     {
-                        Face *face = new Face();
+                        shared_ptr<Face> face = make_shared<Face>();
 
                         // get points from v array
                         face->idxVertices.push_back(lineParts.at(1).split("/").at(0).toInt() - 1);
                         face->idxVertices.push_back(lineParts.at(2).split("/").at(0).toInt() - 1);
                         face->idxVertices.push_back(lineParts.at(3).split("/").at(0).toInt() - 1);
 
-                        cares.push_back(*face);
+                        cares.push_back(face);
                     }
 
                 }
             }
+            file.close();
             makeTriangles();
             makeBoundingVolumes();
-            file.close();
         } else {
             qWarning("Boundary object file can not be opened.");
         }

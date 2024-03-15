@@ -3,6 +3,8 @@
 #include "ColorShading.hh"
 #include "NormalShading.hh"
 #include "NColorShading.hh"
+#include "BlinnPhongShading.hh"
+#include "CelShading.hh"
 
 class ShadingFactory
 {
@@ -12,7 +14,8 @@ public:
         COLORSHADING,
         NORMAL,
         NCOLORSHADING,
-        BLINNPHONG
+        BLINNPHONG,
+        TOON
     } SHADING_TYPES;
 
     static ShadingFactory& getInstance() {

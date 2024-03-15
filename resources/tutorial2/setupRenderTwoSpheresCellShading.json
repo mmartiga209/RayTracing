@@ -21,10 +21,10 @@
   }
  ],
  "background": true,
- "MAXDEPTH": 1,
+ "MAXDEPTH": 0,
  "colorTopBackground": [0.5, 0.7, 1],
  "colorDownBackground": [ 1.0, 1.0, 1.0],
- "shading": "BlinnPhong",
+ "shading": "Toon",
  "shadows" : true,
  "reflections" : true,
  "refractions" : true,

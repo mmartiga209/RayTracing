@@ -5,11 +5,11 @@
  */
 #pragma once
 
-#include "Object.hh"
+#include "Plane.hh"
 #include "../TG/TranslateTG.hh"
 
 
-class Triangle: public Object  {
+class Triangle: public Plane {
 public:
     Triangle();
 
@@ -27,11 +27,7 @@ public:
     virtual void print(int indentation) const override;
 
 private:
-    // Vertexs del triangle
-    vec3 v1;
+    // Vertexs del triangle (v1 es el punt de pas del pla)
     vec3 v2;
     vec3 v3;
-
-    // Vector normal al triangle
-    vec3 normal;
 };

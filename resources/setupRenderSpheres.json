@@ -1,9 +1,9 @@
 {
 "camera": {
-    "lookFrom": [-2.0, 2.0, 3.0],
-    "lookAt": [0, 0, 0],
+    "lookFrom": [3.0, 1.0, 4.0],
+    "lookAt": [0, 0, -1],
     "vup": [0, 1, 0],
-    "vfov": 45.00,
+    "vfov": 30.00,
     "aspectRatio": 2.0,
     "pixelsX": 600
 },

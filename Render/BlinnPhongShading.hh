@@ -2,12 +2,12 @@
 
 #include "ShadingStrategy.hh"
 
-class NormalShading: public ShadingStrategy
+class BlinnPhongShading: public ShadingStrategy
 {
 public:
-    NormalShading() {};
+    BlinnPhongShading() {};
     vec3 shading(shared_ptr<Scene> scene, vector<shared_ptr<HitRecord>> infos, vec3 lookFrom, 
                  vec3 globalLight, vector<shared_ptr<Light>> lights, bool shadow) override;
-    ~NormalShading(){};
+    ~BlinnPhongShading(){};
 };
 

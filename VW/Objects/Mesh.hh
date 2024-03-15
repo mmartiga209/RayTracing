@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QRegularExpression>
 
+#include "Controller.hh"
 #include "Object.hh"
 #include "Face.hh"
 #include "Triangle.hh"
@@ -33,11 +34,10 @@ public:
     virtual ~Mesh();
 private:
 
-
     QString nom;
-    vector<Face> cares; // facees o cares de l'objecte
-    vector<vec4> vertexs; // vertexs de l'objecte sense repetits
-    vector<shared_ptr<Triangle>> triangles; // triangles de la malla
+    vector<shared_ptr<Face>> cares; // faces o cares de l'objecte
+    vector<vec3> vertexs; // vertexs de l'objecte sense repetits
+    vector<shared_ptr<Plane>> plans; // plans de la malla
 
     shared_ptr<Box> aabb; // axis aligned bounding box
     shared_ptr<Sphere> bSphere; // bounding sphere

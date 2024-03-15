@@ -1,140 +1,93 @@
 #include "Triangle.hh"
 
-Triangle::Triangle() {
+Triangle::Triangle():Plane() {
     // Triangle per defecte (normal: (0,-1,0))
     Triangle(vec3(0.0,0.0,0.0),vec3(1.0,0.0,0.0),vec3(0.0,0.0,1.0));
 }
 
-Triangle::Triangle(const vec3 &v1, const vec3 &v2, const vec3 &v3)  {
+Triangle::Triangle(const vec3 &v1, const vec3 &v2, const vec3 &v3):Plane()  {
     // Sentit antihorari
     this->v1 = v1;
     this->v2 = v2;
     this->v3 = v3;
 
     normal = (normalize(cross(v2-v1, v3-v1)));
+    computeD();
 }
 
 bool Triangle::hit(Ray &raig, float tmin, float tmax) const {
-    vec3 vp = raig.getDirection();
-
-    // Si el raig i el normal del triangle són ortogonals, no hi ha intersecció
-    if(abs(dot(vp, normal))<DBL_EPSILON){
+    // Interseccio amb el pla del triangle?
+    float t;
+    if (!isIntersection(&t, raig.getOrigin(), raig.getDirection(), tmin, tmax)) {
         return false;
     }
 
-    // En els altres casos hi haurà interseccio (si estem en el rang de min/max).
-    // Cal omplir la informació del hit.
+    // Comprovacio interseccio dins el triangle (recorregut antihorari)
+    vec3 P = raig.pointAt(t);
 
-    // PLA: Ax+By+Cz+D=0
-    // on A,B,C = normal
-
-    // 1) Calculem la D = -Ax-By-Cz
-    float d = -normal[0]*v1[0] - normal[1]*v1[1] - normal[2]*v1[2];
-
-    // 2) Imposem que la recta p+tv compleixi l'eq del pla
-    // A(p1 + t*v1) + ... + D = 0
-    // Aillem la t
-    vec3 rp = raig.getOrigin();
-    float temp = -normal[0]*rp[0] - normal[1]*rp[1] - normal[2]*rp[2] - d;
-    temp /= normal[0]*vp[0] + normal[1]*vp[1] + normal[2]*vp[2];
-
-    // Retornem false si no estem en el rang demanat
-    if (temp > tmax || temp < tmin) {
-        return false;
-    }    
-
-    // Comprovacio interseccio dins el triangle
-    vec3 p = raig.pointAt(temp);
-
-    // Coordenades baricentriques (no divisio per 2, es cancel·la amb el quocient)
-    float div = 1 / length(cross(v2 - v1, v3 - v1));
-    float v = length(cross(v2 - v1, p - v1)) * div;
-    float u = length(cross(p - v1, v3 - v1)) * div;
-    float w = length(cross(v2 - p, v3 - p)) * div;
-
-    // 0 < u,v,w < 1
-    if (0 >= u || 0 >= v || 0 >= w || u >= 1 || v >= 1 || w >= 1) {
+    // P a la dreta de l'aresta v1v2
+    if (dot(normal, cross(v2 - v1, P - v1)) < 0) {
         return false;
     }
 
-    // Si la suma de les coordenades baricentriques es 1, estem dins el triangle
-    if (abs(1 - (u+v+w)) < DBL_EPSILON) {
-        shared_ptr<HitRecord> info = make_shared<HitRecord>();
-
-        // Omplim el camp de info:
-        info->t = temp;
-        info->p = p;
-        // La normal a un triangle es la mateixa per tots els punts
-        info->normal = normal;
-        info->mat = material;
-        raig.addHit(info);
-        return true;
+    // P a la dreta de l'aresta v2v3
+    if (dot(normal, cross(v3 - v2, P - v2)) < 0) {
+        return false;
     }
-    
-    // No està dins el triangle
-    return false;
+
+    // P a la dreta de l'aresta v3v1
+    if (dot(normal, cross(v1 - v3, P - v3)) < 0) {
+        return false;
+    }
+
+    // Interior del triangle, registrem el hit
+    shared_ptr<HitRecord> info = make_shared<HitRecord>();
+    info->t = t;
+    info->p = P;
+
+    // La normal a un triangle es la mateixa per tots els punts
+    info->normal = normal;
+    info->mat = material;
+    raig.addHit(info);
+    return true;
 }
 
 // Mateixa estrategia que hit(), usant raig.insertHit()
 bool Triangle::allHits(Ray& raig, float tmin, float tmax) const {
-    vec3 vp = raig.getDirection();
-
-    // Si el raig i el normal del triangle són ortogonals, no hi ha intersecció
-    if(abs(dot(vp, normal))<DBL_EPSILON){
+    // Interseccio amb el pla del triangle?
+    float t;
+    if (!isIntersection(&t, raig.getOrigin(), raig.getDirection(), tmin, tmax)) {
         return false;
     }
 
-    // En els altres casos hi haurà interseccio (si estem en el rang de min/max).
-    // Cal omplir la informació del hit.
+    // Comprovacio interseccio dins el triangle (recorregut antihorari)
+    vec3 P = raig.pointAt(t);
 
-    // PLA: Ax+By+Cz+D=0
-    // on A,B,C = normal
-
-    // 1) Calculem la D = -Ax-By-Cz
-    float d = -normal[0]*v1[0] - normal[1]*v1[1] - normal[2]*v1[2];
-
-    // 2) Imposem que la recta p+tv compleixi l'eq del pla
-    // A(p1 + t*v1) + ... + D = 0
-    // Aillem la t
-    vec3 rp = raig.getOrigin();
-    float temp = -normal[0]*rp[0] - normal[1]*rp[1] - normal[2]*rp[2] - d;
-    temp /= normal[0]*vp[0] + normal[1]*vp[1] + normal[2]*vp[2];
-
-    // Retornem false si no estem en el rang demanat
-    if (temp > tmax || temp < tmin) {
-        return false;
-    }    
-
-    // Comprovacio interseccio dins el triangle
-    vec3 p = raig.pointAt(temp);
-
-    // Coordenades baricentriques (no divisio per 2, es cancel·la amb el quocient)
-    float div = 1 / length(cross(v2 - v1, v3 - v1));
-    float v = length(cross(v2 - v1, p - v1)) * div;
-    float u = length(cross(p - v1, v3 - v1)) * div;
-    float w = length(cross(v2 - p, v3 - p)) * div;
-
-    // 0 < u,v,w < 1
-    if (0 >= u || 0 >= v || 0 >= w || u >= 1 || v >= 1 || w >= 1) {
+    // P a la dreta de l'aresta v1v2
+    if (dot(normal, cross(v2 - v1, P - v1)) < 0) {
         return false;
     }
 
-    // Si la suma de les coordenades baricentriques es 1, estem dins el triangle
-    if (abs(1 - (u+v+w)) < DBL_EPSILON) {
-        shared_ptr<HitRecord> info = make_shared<HitRecord>();
-
-        // Omplim el camp de info:
-        info->t = temp;
-        info->p = p;
-        // La normal a un triangle es la mateixa per tots els punts
-        info->normal = normal;
-        info->mat = material;
-        raig.insertHit(info);
-        return true;
+    // P a la dreta de l'aresta v2v3
+    if (dot(normal, cross(v3 - v2, P - v2)) < 0) {
+        return false;
     }
-    
-    // No està dins el triangle
-    return false;
+
+    // P a la dreta de l'aresta v3v1
+    if (dot(normal, cross(v1 - v3, P - v3)) < 0) {
+        return false;
+    }
+
+    // Interior del triangle, registrem el hit
+    shared_ptr<HitRecord> info = make_shared<HitRecord>();
+    info->t = t;
+    info->p = P;
+
+    // La normal a un triangle es la mateixa per tots els punts
+    info->normal = normal;
+    info->mat = material;
+    raig.insertHit(info);
+    return true;
 }
 
 void Triangle::update(int frame) {
@@ -168,6 +121,7 @@ void Triangle::read (const QJsonObject &json)
     }
 
     normal = (normalize(cross(v2-v1, v3-v1)));
+    computeD();
 
 }
 

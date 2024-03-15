@@ -21,8 +21,7 @@ bool Lambertian::scatter(const Ray& r_in, int t, vec3& color, Ray & r_out) const
     vec3 target = rec->p + rec->normal + Hittable::RandomInSphere();
     r_out =  Ray(rec->p, target-rec->p);
     color = Kd;
-    //return true;
-    return false;
+    return true;
 }
 
 vec3 Lambertian::getDiffuse(vec2 uv) const {

@@ -15,6 +15,7 @@ Material::Material(vec3 d) {
     Ks = vec3(1.0f, 1.0f, 1.0f);
     shininess = 1.0f;
     Kt = vec3(0.0f, 0.0f, 0.0f);
+    nut = 0.0f;
 }
 
 Material::Material(vec3 a, vec3 d, vec3 s, float shin) {
@@ -23,6 +24,7 @@ Material::Material(vec3 a, vec3 d, vec3 s, float shin) {
     Kd = d;
     Ks = s;
     shininess = shin;
+    nut = 0.0f;
 }
 
 Material::Material(vec3 a, vec3 d, vec3 s, float shin, float opac) {
@@ -32,6 +34,7 @@ Material::Material(vec3 a, vec3 d, vec3 s, float shin, float opac) {
     Ks = s;
     shininess = shin;
     opacity = opac;
+    nut = 0.0f;
 }
 
 
@@ -53,6 +56,15 @@ void Material::read(const QJsonObject &json)
         Kd[1] = auxVec[1].toDouble();
         Kd[2] = auxVec[2].toDouble();
     }
+    if (json.contains("kdtoon") && json["kdtoon"].isArray()) {
+        QJsonArray auxVec = json["kdtoon"].toArray();
+        for (int i=0; i<4; i++) {
+            QJsonArray auxKd = auxVec[i].toArray();
+            for (int j=0; j<3; j++) {
+                KdToon[i][j] = auxKd[j].toDouble();
+            }
+        }
+    }
     if (json.contains("ks") && json["ks"].isArray()) {
         QJsonArray auxVec = json["ks"].toArray();
         Ks[0] = auxVec[0].toDouble();
@@ -71,6 +83,9 @@ void Material::read(const QJsonObject &json)
 
     if (json.contains("opacity") && json["opacity"].isDouble())
         opacity = json["opacity"].toDouble();
+
+    if (json.contains("nut") && json["nut"].isDouble())
+        opacity = json["nut"].toDouble();
 
 }
 
@@ -96,6 +111,7 @@ void Material::write(QJsonObject &json) const
 
     json["opacity"] = opacity;
     json["shininess"] = shininess;
+    json["nut"] = nut;
 }
 
 //! [1]
@@ -110,6 +126,7 @@ void Material::print(int indentation) const
     QTextStream(stdout) << indent << "Ks:\t" << Kt[0] << ", "<< Kt[1] << ", "<< Kt[2] << "\n";
     QTextStream(stdout) << indent << "shininess:\t" << shininess<< "\n";
     QTextStream(stdout) << indent << "opacity:\t" << opacity<< "\n";
+    QTextStream(stdout) << indent << "nut:\t" << nut<< "\n";
 }
 
 

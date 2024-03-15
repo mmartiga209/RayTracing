@@ -13,71 +13,18 @@ Box::Box(const vec3 &min, const vec3 &max)  {
 
 // Smits' method
 bool Box::hit(Ray &raig, float tmin, float tmax) const {
-    // NOTA: Per considerar la interseccio cal que tant la 1a com la 2a estiguin en (tmin,tmax)
-    float min_inter = tmin, max_inter = tmax;
-    int normal_comp;
-    vec3 direction = raig.getDirection();
-    vec3 origin = raig.getOrigin();
-
-    // Obtencio interseccio minima i maxima tractant components
-    for (int i=0; i<3; i++) {
-        float t0, t1, div = 1 / direction[i];
-
-        // Valor minim i maxim de t en aquesta component
-        if (div >= 0) {
-            t0 = (min[i] - origin[i]) * div;
-            t1 = (max[i] - origin[i]) * div;
-        } else {
-            t0 = (max[i] - origin[i]) * div;
-            t1 = (min[i] - origin[i]) * div;
-        }
-
-        // Interseccio impossible
-        if ((min_inter > t1) || (t0 > max_inter))
-            return false;
-        
-        // Actualitzacio minim/maxim
-        if (t0 > min_inter) {
-            min_inter = t0;
-            normal_comp = i;
-        }
-        if (t1 < max_inter)
-            max_inter = t1;
-    }
-
-    // Validacio final de t
-    if ((tmin < min_inter) && (max_inter < tmax)) {
-        shared_ptr<HitRecord> hit = make_shared<HitRecord>();
-        hit->t = min_inter;
-        hit->p = raig.pointAt(hit->t);
-        hit->mat = material;
-
-        // Normal i-essim vector base canonica, i component interseccio que dona la t
-        vec3 temp(0.0);
-        temp[normal_comp] = -direction[normal_comp]; // Direccio oposada al raig en aquella component
-        hit->normal = normalize(temp);
-
-        // Afegim al raig el hit mes proper
-        raig.addHit(hit);
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool Box::allHits(Ray& raig, float tmin, float tmax) const {
-    // NOTA: Per considerar les interseccions cal que tant la 1a com la 2a estiguin en (tmin,tmax)
     float min_inter = tmin, max_inter = tmax;
     int normal_comp_min, normal_comp_max;
     vec3 direction = raig.getDirection();
     vec3 origin = raig.getOrigin();
 
     // Obtencio interseccio minima i maxima tractant components
+    bool any = false;
     for (int i=0; i<3; i++) {
         float t0, t1, div = 1 / direction[i];
 
         // Valor minim i maxim de t en aquesta component
-        if (div >= 0) {
+        if (div > 0) {
             t0 = (min[i] - origin[i]) * div;
             t1 = (max[i] - origin[i]) * div;
         } else {
@@ -85,8 +32,8 @@ bool Box::allHits(Ray& raig, float tmin, float tmax) const {
             t1 = (min[i] - origin[i]) * div;
         }
 
-        // Interseccio impossible
-        if ((min_inter > t1) || (t0 > max_inter))
+        // Interseccio fora de (tmin, tmax)
+        if (t0 > tmax || t1 < tmin) 
             return false;
         
         // Actualitzacio minim/maxim
@@ -100,40 +47,122 @@ bool Box::allHits(Ray& raig, float tmin, float tmax) const {
         }
     }
 
-    // Validacio final de t
-    if ((tmin < min_inter) && (max_inter < tmax)) {
-        // Interseccio propera
-        shared_ptr<HitRecord> hit = make_shared<HitRecord>();
-        hit->t = min_inter;
-        hit->p = raig.pointAt(hit->t);
-        hit->mat = material;
+    // Validacio final de t (hem comprovat min_inter < tmax i tmin < max_inter)
+    if (min_inter < max_inter) {
+        if (tmin < min_inter) {
+            // Interseccio amb menor t
+            shared_ptr<HitRecord> hit = make_shared<HitRecord>();
+            hit->t = min_inter;
+            hit->p = raig.pointAt(min_inter);
+            hit->mat = material;
 
-        // Normal i-essim vector base canonica, i component interseccio que dona la t
-        vec3 temp(0.0);
-        temp[normal_comp_min] = -direction[normal_comp_min]; // Sentit invers raig en la component
-        hit->normal = normalize(temp);
+            // Normal i-essim vector base canonica, i component interseccio que dona la t (sentit oposat al raig)
+            vec3 temp(0.0);
+            temp[normal_comp_min] = (direction[normal_comp_min] > 0) ? -1.0f : 1.0f;
+            hit->normal = temp;
 
-        // Afegim el hit
-        raig.insertHit(hit);
+            // Afegim el hit
+            raig.addHit(hit);
 
-        // Interseccio llunyana
-        hit = make_shared<HitRecord>();
-        hit->t = max_inter;
-        hit->p = raig.pointAt(hit->t);
-        hit->mat = material;
+            any = true;
+        } else if (max_inter < tmax) {
+            // Interseccio amb major t
+            shared_ptr<HitRecord> hit = make_shared<HitRecord>();
+            hit->t = max_inter;
+            hit->p = raig.pointAt(max_inter);
+            hit->mat = material;
 
-        // Normal i-essim vector base canonica, i component interseccio que dona la t
-        temp = vec3(0.0);
-        temp[normal_comp_max] = direction[normal_comp_max]; // Sentit del raig en la component
-        hit->normal = normalize(temp);
+            // Normal i-essim vector base canonica, i component interseccio que dona la t (sentit oposat al raig)
+            vec3 temp(0.0);
+            temp[normal_comp_max] = (direction[normal_comp_max] > 0) ? -1.0f : 1.0f;
+            hit->normal = temp;
 
-        // Afegim el hit
-        raig.insertHit(hit);
-
-        return true;
-    } else {
-        return false;
+            // Afegim el hit
+            raig.addHit(hit);
+            
+            any = true;
+        }
     }
+
+    return any;
+}
+
+// Igual que hit() contemplant les dues possibilitats d'interseccio i amb insertHit()
+bool Box::allHits(Ray& raig, float tmin, float tmax) const {
+    float min_inter = tmin, max_inter = tmax;
+    int normal_comp_min, normal_comp_max;
+    vec3 direction = raig.getDirection();
+    vec3 origin = raig.getOrigin();
+
+    // Obtencio interseccio minima i maxima tractant components
+    bool any = false;
+    for (int i=0; i<3; i++) {
+        float t0, t1, div = 1 / direction[i];
+
+        // Valor minim i maxim de t en aquesta component
+        if (div > 0) {
+            t0 = (min[i] - origin[i]) * div;
+            t1 = (max[i] - origin[i]) * div;
+        } else {
+            t0 = (max[i] - origin[i]) * div;
+            t1 = (min[i] - origin[i]) * div;
+        }
+
+        // Interseccio fora de (tmin, tmax)
+        if (t0 > tmax || t1 < tmin) 
+            return false;
+        
+        // Actualitzacio minim/maxim
+        if (t0 > min_inter) {
+            min_inter = t0;
+            normal_comp_min = i;
+        }
+        if (t1 < max_inter) {
+            max_inter = t1;
+            normal_comp_max = i;
+        }
+    }
+
+    // Validacio final de t (hem comprovat min_inter < tmax i tmin < max_inter)
+    if (min_inter < max_inter) {
+        // Interseccio amb menor t
+        if (tmin < min_inter) {
+            shared_ptr<HitRecord> hit = make_shared<HitRecord>();
+            hit->t = min_inter;
+            hit->p = raig.pointAt(min_inter);
+            hit->mat = material;
+
+            // Normal i-essim vector base canonica, i component interseccio que dona la t (sentit oposat al raig)
+            vec3 temp(0.0);
+            temp[normal_comp_min] = (direction[normal_comp_min] > 0) ? -1.0f : 1.0f;
+            hit->normal = temp;
+
+            // Afegim el hit
+            raig.insertHit(hit);
+
+            any = true;
+        }
+
+        // Interseccio amb major t
+        if (max_inter < tmax) {
+            shared_ptr<HitRecord> hit = make_shared<HitRecord>();
+            hit->t = max_inter;
+            hit->p = raig.pointAt(max_inter);
+            hit->mat = material;
+
+            // Normal i-essim vector base canonica, i component interseccio que dona la t (sentit oposat al raig)
+            vec3 temp(0.0);
+            temp[normal_comp_max] = (direction[normal_comp_max] > 0) ? -1.0f : 1.0f;
+            hit->normal = temp;
+
+            // Afegim el hit
+            raig.insertHit(hit);
+            
+            any = true;
+        }
+    }
+
+    return any;
 }
 
 void Box::update(int frame) {

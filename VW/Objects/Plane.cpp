@@ -4,58 +4,74 @@
 
 Plane::Plane(vec3 normal, vec3 pass_point) : Object(){
     this->normal = normalize(normal);
-    this->point = pass_point;
+    this->v1 = pass_point;
+    this->D = -dot(this->normal, pass_point);
 }
 
 Plane::Plane(vec3 normal, float d) : Object() {
     normal  = normalize(normal);
     this->normal = normal;
+    this->D = d;
     if (abs(normal.z)>DBL_EPSILON)
-        this->point = vec3(0.0, 0.0, -d/normal.z);
+        this->v1 = vec3(0.0, 0.0, -d/normal.z);
     else if (abs(normal.y)>DBL_EPSILON)
-        this->point = vec3(0.0, -d/normal.y, 0.0);
+        this->v1 = vec3(0.0, -d/normal.y, 0.0);
     else
-        this->point = vec3(-d/normal.x, 0.0, 0.0);
+        this->v1 = vec3(-d/normal.x, 0.0, 0.0);
 };
 
-bool Plane::hit(Ray &raig, float tmin, float tmax) const{
+Plane::Plane(vec3 normal, vec3 pass_point, float d, shared_ptr<Material> m) : Object(){
+    // En aquest constructor normal esta normalitzat
+    this->normal = normal;
+    this->v1 = pass_point;
+    this->D = d;
+    setMaterial(m);
+}
 
-    shared_ptr<HitRecord> info = make_shared<HitRecord>();
+void Plane::computeD() {
+    // Assumim que els altres atributs estan omplerts
+    this->D = -dot(this->normal, this->v1);
+}
 
-    // Comprovem interseccio entre el pla i el raig
+bool Plane::isNormal(vec3 normal) const {
+    return abs(1 - dot(this->normal, normal)) < DBL_EPSILON;
+}
+bool Plane::isD(float d) const {
+    return abs(D - d) < DBL_EPSILON;
+}
 
-    // Comprovem si el normal al pla i el raig son ortogonals.
-    // En aquest cas son paralels i no hi ha interseccio
+vec3 Plane::getNormal() const {
+    return normal;
+}
 
-    if(abs(dot(raig.getDirection(), normal))<DBL_EPSILON){
+bool Plane::isIntersection(float *t, vec3 origin, vec3 direction, float tmin, float tmax) const {
+    // Raig paral·lel al pla
+    float dot_prod = dot(direction, normal);
+    if (abs(dot_prod) < DBL_EPSILON) {
         return false;
     }
 
-    // En els altres casos hi haurà interseccio (si estem en el rang de min/max).
-    // Cal omplir la informació del hit.
-
-    // PLA: Ax+By+Cz+D=0
-    // on A,B,C = normal
-
-    // 1) Calculem la D = -Ax-By-Cz
-    float d = -normal[0]*point[0] - normal[1]*point[1] - normal[2]*point[2];
-
-    // 2) Imposem que la recta p+tv compleixi l'eq del pla
-    // A(p1 + t*v1) + ... + D = 0
-    // Aillem la t
-    vec3 rp = raig.getOrigin();
-    vec3 vp = raig.getDirection();
-    float temp =  -normal[0]*rp[0] - normal[1]*rp[1] - normal[2]*rp[2] - d;
-    temp/= normal[0]*vp[0] + normal[1]*vp[1] + normal[2]*vp[2];
-
-    // Retornem false si no estem en el rang demanat
+    // t de la interseccio i comprovacio (tmin,tmax)
+    float temp = -((dot(normal,origin) + D) / dot_prod);
     if (temp > tmax || temp < tmin) {
         return false;
     }
 
+    *t = temp;
+    return true;
+}
+
+bool Plane::hit(Ray &raig, float tmin, float tmax) const{
+    // Interseccio amb el pla del triangle?
+    float t;
+    if (!isIntersection(&t, raig.getOrigin(), raig.getDirection(), tmin, tmax)) {
+        return false;
+    }
+
     // Omplim el camp de info:
-    info->t = temp;
-    info->p = raig.pointAt(info->t);
+    shared_ptr<HitRecord> info = make_shared<HitRecord>();
+    info->t = t;
+    info->p = raig.pointAt(t);
 
     // La normal a un pla es la mateixa per tots els punts
     info->normal = normal;
@@ -65,42 +81,16 @@ bool Plane::hit(Ray &raig, float tmin, float tmax) const{
 }
 
 bool Plane::allHits(Ray& r, float tmin, float tmax) const {
-    shared_ptr<HitRecord> info = make_shared<HitRecord>();
-
-    // Comprovem interseccio entre el pla i el raig
-
-    // Comprovem si el normal al pla i el raig son ortogonals.
-    // En aquest cas son paralels i no hi ha interseccio
-
-    if(abs(dot(r.getDirection(), normal))<DBL_EPSILON){
-        return false;
-    }
-
-    // En els altres casos hi haurà interseccio (si estem en el rang de min/max).
-    // Cal omplir la informació del hit.
-
-    // PLA: Ax+By+Cz+D=0
-    // on A,B,C = normal
-
-    // 1) Calculem la D = -Ax-By-Cz
-    float d = -normal[0]*point[0] - normal[1]*point[1] - normal[2]*point[2];
-
-    // 2) Imposem que la recta p+tv compleixi l'eq del pla
-    // A(p1 + t*v1) + ... + D = 0
-    // Aillem la t
-    vec3 rp = r.getOrigin();
-    vec3 vp = r.getDirection();
-    float temp =  -normal[0]*rp[0] - normal[1]*rp[1] - normal[2]*rp[2] - d;
-    temp/= normal[0]*vp[0] + normal[1]*vp[1] + normal[2]*vp[2];
-
-    // Retornem false si no estem en el rang demanat
-    if (temp > tmax || temp < tmin) {
+    // Interseccio amb el pla del triangle?
+    float t;
+    if (!isIntersection(&t, r.getOrigin(), r.getDirection(), tmin, tmax)) {
         return false;
     }
 
     // Omplim el camp de info:
-    info->t = temp;
-    info->p = r.pointAt(info->t);
+    shared_ptr<HitRecord> info = make_shared<HitRecord>();
+    info->t = t;
+    info->p = r.pointAt(t);
 
     // La normal a un pla es la mateixa per tots els punts
     info->normal = normal;
@@ -117,11 +107,11 @@ void Plane::aplicaTG(shared_ptr<TG> t) {
     if (dynamic_pointer_cast<shared_ptr<TranslateTG>>(t)) {
 
         // Nomes movem el punt de pas
-        vec4 newp(this->point, 1.0);
+        vec4 newp(this->v1, 1.0);
         newp = t->getTG() * newp;
-        this->point.x = newp.x;
-        this->point.y = newp.y;
-        this->point.z = newp.z;
+        this->v1.x = newp.x;
+        this->v1.y = newp.y;
+        this->v1.z = newp.z;
     }
 }
 
@@ -131,9 +121,9 @@ void Plane::read (const QJsonObject &json)
 
     if (json.contains("point") && json["point"].isArray()) {
         QJsonArray auxVec = json["point"].toArray();
-        point[0] = auxVec[0].toDouble();
-        point[1] = auxVec[1].toDouble();
-        point[2] = auxVec[2].toDouble();
+        v1[0] = auxVec[0].toDouble();
+        v1[1] = auxVec[1].toDouble();
+        v1[2] = auxVec[2].toDouble();
     }
     if (json.contains("normal") && json["normal"].isArray()) {
         QJsonArray auxVec = json["normal"].toArray();
@@ -141,6 +131,8 @@ void Plane::read (const QJsonObject &json)
         normal[1] = auxVec[1].toDouble();
         normal[2] = auxVec[2].toDouble();
     }
+
+    computeD();
 }
 
 
@@ -154,8 +146,8 @@ void Plane::write(QJsonObject &json) const
     json["normal"] = auxArray;
 
     QJsonArray auxArray2;
-    auxArray2.append(point[0]);auxArray2.append(point[1]);auxArray2.append(point[2]);
-    json["normal"] = auxArray2;
+    auxArray2.append(v1[0]);auxArray2.append(v1[1]);auxArray2.append(v1[2]);
+    json["point"] = auxArray2;
 }
 //! [1]
 
@@ -164,7 +156,8 @@ void Plane::print(int indentation) const
     Object::print(indentation);
     const QString indent(indentation * 2, ' ');
 
-    QTextStream(stdout) << indent << "point:\t" << point[0] << ", "<< point[1] << ", "<< point[2] << "\n";
+    QTextStream(stdout) << indent << "point:\t" << v1[0] << ", "<< v1[1] << ", "<< v1[2] << "\n";
     QTextStream(stdout) << indent << "normal:\t" << normal[0] << ", "<< normal[1] << ", "<< normal[2] << "\n";
+    QTextStream(stdout) << indent << "D:\t" << D << "\n";
 
 }

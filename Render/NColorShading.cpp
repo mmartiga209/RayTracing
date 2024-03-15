@@ -1,7 +1,9 @@
 #include "NColorShading.hh"
 
 
-vec3 NColorShading::shading(shared_ptr<Scene> scene, vector<shared_ptr<HitRecord>> infos, vec3 lookFrom, bool shadow) {
+vec3 NColorShading::shading(shared_ptr<Scene> scene, vector<shared_ptr<HitRecord>> infos, vec3 lookFrom, 
+                            vec3 globalLight, vector<shared_ptr<Light>> lights, bool shadow)
+{
     if (!infos.empty()) {
         vec3 color(0.0f);
         vec3 factor(1.0f);

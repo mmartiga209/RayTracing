@@ -10,6 +10,7 @@
 #include "../DataService/SetUp.hh"
 
 #include "glm/glm.hpp"
+#include "glm/gtc/random.hpp"
 
 using namespace std;
 using namespace glm;
@@ -40,6 +41,6 @@ private:
 
         // Funcio recursiva que calcula el color d'un pixel. Inicialment
         // es crida a cada pixel de forma no recursiva.
-        vec3 getColorPixel (Ray &ray);
+        vec3 getColorPixel (Ray &ray, int depth=0);
 };
 

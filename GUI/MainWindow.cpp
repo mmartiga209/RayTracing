@@ -42,11 +42,10 @@ MainWindow::MainWindow(QWidget *parent) :
     // TO DO Fase 0: Connectar els menús ja existents amb els nous shadings
     QObject::connect(ui->actionColor_Shading, SIGNAL(triggered()), builder, SLOT(activaColorShading()));
     QObject::connect(ui->actionNormal_Shading, SIGNAL(triggered()), builder, SLOT(activaNormalShading()));
+    QObject::connect(ui->actionBlinn_Phong, SIGNAL(triggered()), builder, SLOT(activaBlinn_Phong()));
+    QObject::connect(ui->actionCel_Shading, SIGNAL(triggered()), builder, SLOT(activaCel_Shading()));
 
     // TO DO Fase 2: connectar els shadings d'il·luminació Phong, Bling-Phong i d'altres
-
-    //    QObject::connect(ui->actionBlinn_Phong, SIGNAL(triggered()), this, SLOT(activaBlinn_Phong()));
-    //    QObject::connect(ui->actionCell_Shading, SIGNAL(triggered()), this, SLOT(activaCell_Shading()));
     //    QObject::connect(ui->actionAnother_Shading, SIGNAL(triggered()), this, SLOT(activaAnother_Shading()));
 
 
@@ -156,6 +155,9 @@ void MainWindow::refreshWindow() {
     ui->valBoundingVolumes->setChecked((bool)(visSetUp->getBoundingVolumes()));
     ui->valHeight->setValue((int)((visSetUp->getCamera())->viewportY));
     ui->valWidth->setValue((int)((visSetUp->getCamera())->viewportX));
+    ui->valDepth->setValue((int)(visSetUp->getMAXDEPTH()));
+    ui->backGround->setChecked(visSetUp->getBackground());
+    ui->valSamples->setValue((int)(visSetUp->getSamples()));
 }
 
 QImage MainWindow::getImage() { return image;}

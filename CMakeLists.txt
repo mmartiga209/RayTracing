@@ -39,13 +39,15 @@ include_directories(
 # Aules UB
 #set(QT5_INSTALLATION_PATH "/opt/Qt/5.9.1/gcc_64")
 # Ubuntu 22.04
-#set(QT5_INSTALLATION_PATH "/opt/Qt5.12.12/5.12.12/gcc_64")
+# set(QT5_INSTALLATION_PATH "/opt/Qt5.12.12/5.12.12/gcc_64")
 # MAC OS (change your username!)
 #set(QT5_INSTALLATION_PATH "/Users/anna/Qt15/5.15.2/clang_64")
 # Diego
 set(QT5_INSTALLATION_PATH "/usr/lib/x86_64-linux-gnu")
 # Kevin
 #set(QT5_INSTALLATION_PATH "C:/Qt/Qt5.12.12/5.12.12/mingw73_64")
+# Pol
+#set(QT5_INSTALLATION_PATH "/home/polg24/Qt5.12.12/5.12.12/gcc_64")
 ######################
 
 
@@ -91,20 +93,25 @@ set(SOURCES
     GUI/Label.cpp
     GUI/MainWindow.cpp
     Render/Camera.cpp
+    Render/BlinnPhongShading.cpp
+    Render/CelShading.cpp
     Render/ColorShading.cpp
     Render/NormalShading.cpp
     Render/NColorShading.cpp
     Render/RayTracing.cpp
     Render/ShadingFactory.cpp
+    Render/ShadingStrategy.cpp
     Scene.cpp
     SceneFactory.cpp
     VW/Lights/Light.cpp
     VW/Lights/LightFactory.cpp
     VW/Lights/PointLight.cpp
     VW/Materials/Lambertian.cpp
+    VW/Materials/Metal.cpp
     VW/Materials/Material.cpp
     VW/Materials/MaterialFactory.cpp
     VW/Materials/Texture.cpp
+    VW/Materials/Transparent.cpp
     VW/Objects/Box.cpp
     VW/Objects/Face.cpp
     VW/Objects/Mesh.cpp
@@ -133,7 +140,9 @@ set(HEADERS
     Rays/Hittable.hh
     Rays/Ray.hh
     Render/Camera.hh
+    Render/BlinnPhongShading.hh
     Render/ColorShading.hh
+    Render/CelShading.hh
     Render/NormalShading.hh
     Render/NColorShading.hh
     Render/RayTracing.hh
@@ -145,9 +154,11 @@ set(HEADERS
     VW/Lights/LightFactory.hh
     VW/Lights/PointLight.hh
     VW/Materials/Lambertian.hh
+    VW/Materials/Metal.hh
     VW/Materials/Material.hh
     VW/Materials/MaterialFactory.hh
     VW/Materials/Texture.hh
+    VW/Materials/Transparent.hh
     VW/Objects/Box.hh
     VW/Objects/Face.hh
     VW/Objects/Mesh.hh

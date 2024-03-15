@@ -63,3 +63,19 @@ void Builder::activaNormalShading() {
     } else msgBox.setText("Error creating shading");
     msgBox.exec();
 }
+
+void Builder::activaBlinn_Phong() {
+    QMessageBox msgBox;
+    if (Controller::getInstance()->createShading(ShadingFactory::SHADING_TYPES::BLINNPHONG)) {
+        msgBox.setText("Blinn-Phong Shading created.");
+    } else msgBox.setText("Error creating shading");
+    msgBox.exec();
+}
+
+void Builder::activaCel_Shading() {
+    QMessageBox msgBox;
+    if (Controller::getInstance()->createShading(ShadingFactory::SHADING_TYPES::TOON)) {
+        msgBox.setText("Cel Shading created.");
+    } else msgBox.setText("Error creating shading");
+    msgBox.exec();
+}

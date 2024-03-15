@@ -10,7 +10,7 @@ SceneFactoryVirtual::SceneFactoryVirtual(QString filename) {
     createScene(filename);
 }
 
-shared_ptr<Scene>  SceneFactoryVirtual::createScene() {
+shared_ptr<Scene> SceneFactoryVirtual::createScene() {
     scene= make_shared<Scene>();
     // Pots posar el codi aqui per generar una escena de forma procedimental
     int n_spheres = 5;
